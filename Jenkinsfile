@@ -14,10 +14,10 @@ pipeline {
                 sh 'mvn test'
             }
         }
-        stage('Publish Coverage Report') {
+        stage('Code Coverage') {
             steps {
-            recordCoverage(tools: [[parser: 'JACOCO']])
-            }   
+                sh 'mvn jacoco:report'
+            }
         }
         stage('Publish Test Results') {
             steps {
@@ -26,7 +26,7 @@ pipeline {
         }
         stage('Publish Coverage Report') {
             steps {
-                jacoco()
+                recordCoverage(tools: [[parser: 'JACOCO']])
             }
         }
         stage('Docker Build') {
