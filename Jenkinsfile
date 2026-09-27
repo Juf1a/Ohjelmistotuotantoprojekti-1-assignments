@@ -1,11 +1,6 @@
 pipeline {
     agent any
     stages {
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/Juf1a/Ohjelmistotuotantoprojekti-1-assignments.git'
-            }
-        }
         stage('Build') {
             steps {
                 sh 'mvn clean install'
