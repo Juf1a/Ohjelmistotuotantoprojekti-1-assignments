@@ -8,10 +8,10 @@ pipeline {
         }
         stage('Build') {
             steps {
-                sh 'mvn clean install' 
+                sh 'mvn clean install'
             }
         }
-        stage('Test') {git 'https://github.com/Juf1a/Ohjelmistotuotantoprojekti-1-assignments.git'
+        stage('Test') {
             steps {
                 sh 'mvn test'
             }
@@ -31,5 +31,22 @@ pipeline {
                 jacoco()
             }
         }
-        // Docker deploy stages come from the lecture demo 
+        stage('Docker Build') {
+            steps {
+                sh 'docker build -t mikeluong/temperature-converter .'
+            }
+        }
+        stage('Docker Login') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                }
+            }
+        }
+        stage('Docker Push') {
+            steps {
+                sh 'docker push mikeluong/temperature-converter'
+            }
+        }
+    }
 }
