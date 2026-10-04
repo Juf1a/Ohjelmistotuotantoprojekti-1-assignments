@@ -31,7 +31,7 @@ pipeline {
         }
         stage('Docker Build') {
             steps {
-                sh 'docker build -t mikeluong/temperature-converter .'
+                sh 'docker build --platform linux/amd64 -t mikeluong/temperature-converter .'
             }
         }
         stage('Docker Login') {

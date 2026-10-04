@@ -3,7 +3,8 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn -q dependency:go-offline
 COPY src ./src
-RUN mvn -q package -DskipTests dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=target/lib
+RUN mvn -q package -DskipTests dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=target/lib \
+    && mkdir target/fx && mv target/lib/javafx-*.jar target/fx/
 
 FROM eclipse-temurin:17-jre-jammy
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -13,8 +14,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 COPY --from=build /app/target/classes ./classes
 COPY --from=build /app/target/lib ./lib
+COPY --from=build /app/target/fx ./fx
 
 ENV DISPLAY=host.docker.internal:0.0
 ENV DB_URL=jdbc:mariadb://host.docker.internal:3306/temperature_db
 
-CMD ["java", "-Dprism.order=sw", "--module-path", "lib", "--add-modules", "javafx.controls", "-cp", "classes:lib/*", "com.example.Main"]
+CMD ["java", "-Dprism.order=sw", "--module-path", "fx", "--add-modules", "javafx.controls", "-cp", "classes:lib/*", "com.example.Main"]
