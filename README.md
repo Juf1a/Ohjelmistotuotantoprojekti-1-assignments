@@ -1,4 +1,4 @@
-# Temperature Converter
+t# Temperature Converter
 
 ## Assignment Description
 
@@ -21,7 +21,9 @@ conversion logic, though it is not currently offered as an option in the GUI.
 - MariaDB Connector/J 3.3.3 and JDBC for database access
 - Maven for dependency management, building, and running
 - JUnit Jupiter 5.9.2 for automated tests
-- JaCoCo 0.8.11 for test coverage reports
+- JaCoCo 0.8.11 for test coverage reports- Docker for containerizing the application
+- Jenkins for the CI/CD pipeline (build, test, coverage, Docker image push)
+- XQuartz for displaying the JavaFX GUI from the Docker container on macOS
 
 ## Design Approach & Implementation Method
 
@@ -121,3 +123,10 @@ mvn javafx:run
 
 Maven downloads the project dependencies as needed and launches the JavaFX
 application.
+
+
+## Docker & CI/CD
+
+The `Dockerfile` packages the application as a Docker image. The `Jenkinsfile`
+defines a Jenkins pipeline that builds, tests, generates the coverage report,
+and pushes the Docker image to Docker Hub.
