@@ -1,4 +1,4 @@
-t# Temperature Converter
+# Temperature Converter
 
 ## Assignment Description
 
@@ -21,7 +21,8 @@ conversion logic, though it is not currently offered as an option in the GUI.
 - MariaDB Connector/J 3.3.3 and JDBC for database access
 - Maven for dependency management, building, and running
 - JUnit Jupiter 5.9.2 for automated tests
-- JaCoCo 0.8.11 for test coverage reports- Docker for containerizing the application
+- JaCoCo 0.8.11 for test coverage reports
+- Docker for containerizing the application
 - Jenkins for the CI/CD pipeline (build, test, coverage, Docker image push)
 - XQuartz for displaying the JavaFX GUI from the Docker container on macOS
 
