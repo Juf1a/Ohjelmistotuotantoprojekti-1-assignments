@@ -4,3 +4,7 @@ target/
 *.class
 *.jar
 .DS_Store
+.env
+*.log
+*.iml
+hs_err_pid*
