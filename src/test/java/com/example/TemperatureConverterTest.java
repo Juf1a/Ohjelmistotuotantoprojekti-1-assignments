@@ -53,5 +53,51 @@ public class TemperatureConverterTest {
     public void testIsExtremeTemperature3(){
         boolean result8 = converter.isExtremeTemperature(60);
         assertTrue(result8);
-}
+    }
+
+    @Test
+    public void testFahrenheitToCelsius3(){
+        double result9 = converter.fahrenheitToCelsius(-40);
+        assertEquals(-40, result9, 0.0001);
+    }
+
+    @Test
+    public void testFahrenheitToCelsius4(){
+        double result10 = converter.fahrenheitToCelsius(98.6);
+        assertEquals(37, result10, 0.0001);
+    }
+
+    @Test
+    public void testCelsiusToFahrenheit3(){
+        double result11 = converter.celsiusToFahrenheit(-40);
+        assertEquals(-40, result11, 0.0001);
+    }
+
+    @Test
+    public void testCelsiusToFahrenheit4(){
+        double result12 = converter.celsiusToFahrenheit(37);
+        assertEquals(98.6, result12, 0.0001);
+    }
+
+    @Test
+    public void testIsExtremeTemperatureLowerBoundary(){
+        // -40 itself is not extreme, only below it
+        assertFalse(converter.isExtremeTemperature(-40));
+    }
+
+    @Test
+    public void testIsExtremeTemperatureUpperBoundary(){
+        // 50 itself is not extreme, only above it
+        assertFalse(converter.isExtremeTemperature(50));
+    }
+
+    @Test
+    public void testIsExtremeTemperatureJustBelowLower(){
+        assertTrue(converter.isExtremeTemperature(-41));
+    }
+
+    @Test
+    public void testIsExtremeTemperatureJustAboveUpper(){
+        assertTrue(converter.isExtremeTemperature(51));
+    }
 }

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -52,6 +53,19 @@ public class MainTest {
     }
 
     @Test
+    public void testLocaleForEachLanguage() {
+        assertEquals(new Locale("fi", "FI"), Main.localeFor("Finnish"));
+        assertEquals(new Locale("sv", "SE"), Main.localeFor("Swedish"));
+        assertEquals(new Locale("ja", "JP"), Main.localeFor("Japanese"));
+        assertEquals(new Locale("en", "US"), Main.localeFor("English"));
+    }
+
+    @Test
+    public void testLocaleForUnknownFallsBackToEnglish() {
+        assertEquals(new Locale("en", "US"), Main.localeFor("Klingon"));
+    }
+
+    @Test
     public void testStartShowsWindowWithTitle() throws Exception {
         assumeTrue(fxAvailable, "JavaFX toolkit not available, skipping UI test");
 
@@ -62,7 +76,7 @@ public class MainTest {
         Platform.runLater(() -> {
             try {
                 Stage stage = new Stage();
-                new Main().start(stage);
+                new Main(Locale.US).start(stage);
                 title.set(stage.getTitle());
                 assertNotNull(stage.getScene());
                 stage.close();
