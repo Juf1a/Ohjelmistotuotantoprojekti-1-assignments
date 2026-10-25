@@ -9,6 +9,10 @@ whose Celsius equivalent is below -40 or above 50 degrees and stores successful
 conversions in a MariaDB database. The interface displays the ten most recent
 saved conversions.
 
+At launch, the application asks the user to choose a language: English
+(default), Finnish, Swedish, or Japanese. All interface text is then shown in
+the chosen language.
+
 The deliverable is a JavaFX application, its MariaDB schema, and automated
 JUnit tests. A Kelvin-to-Celsius conversion is also implemented in the
 conversion logic, though it is not currently offered as an option in the GUI.
@@ -19,6 +23,7 @@ conversion logic, though it is not currently offered as an option in the GUI.
 - JavaFX Controls 17.0.9 for the desktop user interface
 - MariaDB for persistent conversion history
 - MariaDB Connector/J 3.3.3 and JDBC for database access
+- Java `ResourceBundle` and UTF-8 `.properties` files for localization
 - Maven for dependency management, building, and running
 - JUnit Jupiter 5.9.2 for automated tests
 - JaCoCo 0.8.11 for test coverage reports
@@ -31,9 +36,9 @@ conversion logic, though it is not currently offered as an option in the GUI.
 The solution separates the user interface, conversion logic, and database
 access:
 
-- `Main` creates the JavaFX interface, validates numeric input, selects the
-  conversion direction, shows the result, and refreshes the recent-history
-  list.
+- `Main` asks for the user's language, creates the JavaFX interface, validates
+  numeric input, selects the conversion direction, shows the result, and
+  refreshes the recent-history list.
 - `TemperatureConverter` implements Fahrenheit/Celsius conversions, the
   extreme-temperature check, and Kelvin-to-Celsius conversion.
 - `TemperatureUnit` and `TempRecord` represent units and saved conversions.
@@ -43,6 +48,25 @@ access:
   variables, with local defaults.
 - `database/schema.sql` creates the database and required tables and seeds the
   Celsius and Fahrenheit units.
+
+### Localization
+
+All interface text is stored in resource bundles in `src/main/resources`
+rather than written into the code:
+
+| File | Language |
+|---|---|
+| `MessagesBundle_en_US.properties` | English (default) |
+| `MessagesBundle_fi_FI.properties` | Finnish |
+| `MessagesBundle_sv_SE.properties` | Swedish |
+| `MessagesBundle_ja_JP.properties` | Japanese |
+
+Every file contains the same keys, and only the translated values differ. The
+files are saved as UTF-8, which Java 9 and later read by default, so Japanese
+characters need no escaping. At launch a `ChoiceDialog` asks for the language,
+`Main.localeFor` maps the choice to a `Locale`, and `ResourceBundle` loads the
+matching file. Text that contains a value, such as the conversion result, uses
+`MessageFormat` placeholders (`{0}`).
 
 The history is stored in MariaDB so that it can persist between application
 runs. Conversion queries use prepared statements. Invalid numeric input is
@@ -58,13 +82,21 @@ Run the test suite with:
 mvn test
 ```
 
-On 2026-10-09, `mvn test` completed successfully: **26 tests, 0 failures, 0
-errors, and 0 skipped**. Tests cover conversion values and
-extreme-temperature boundaries, model behavior, database configuration,
-temperature-unit queries, saving and retrieving conversion records, and
-JavaFX application startup. The database-backed tests ran against MariaDB.
+On 2026-10-25, `mvn test` completed successfully: **36 tests, 0 failures, 0
+errors, and 0 skipped**. Tests cover conversion values, the
+extreme-temperature boundaries (-41, -40, 50, and 51 °C), model behavior,
+database configuration, temperature-unit queries, saving and retrieving
+conversion records, the language-to-locale mapping, and JavaFX application
+startup. The database-backed tests ran against MariaDB.
 
-Maven also generates a JaCoCo report at `target/site/jacoco/index.html`.
+Generate the JaCoCo coverage report with:
+
+```sh
+mvn clean test jacoco:report
+```
+
+The report is written to `target/site/jacoco/index.html`. On 2026-10-25,
+`TemperatureConverter` had **100% line and 100% branch coverage**.
 
 ### Runtime and manual checks
 
@@ -85,6 +117,8 @@ GUI was manually tested:
    extreme-temperature warning.
 5. Completed a conversion: it appeared in the recent-conversions list. After
    restarting the application, the saved history remained.
+6. Chose Japanese at launch and converted `60` °C to Fahrenheit: all interface
+   text was in Japanese and the result read `結果: 140.00 (極端な温度です!)`.
 
 ## How to Run
 
@@ -123,7 +157,8 @@ mvn javafx:run
 ```
 
 Maven downloads the project dependencies as needed and launches the JavaFX
-application.
+application. A dialog first asks for the language; the main window opens after
+you choose one.
 
 
 ## Docker & CI/CD
