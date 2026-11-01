@@ -60,6 +60,7 @@ rather than written into the code:
 | `MessagesBundle_fi_FI.properties` | Finnish |
 | `MessagesBundle_sv_SE.properties` | Swedish |
 | `MessagesBundle_ja_JP.properties` | Japanese |
+| `MessagesBundle_ar_SA.properties` | Arabic |
 
 Every file contains the same keys, and only the translated values differ. The
 files are saved as UTF-8, which Java 9 and later read by default, so Japanese

@@ -29,21 +29,12 @@ pipeline {
                 recordCoverage(tools: [[parser: 'JACOCO']])
             }
         }
-        stage('Docker Build') {
-            steps {
-                sh 'docker build --platform linux/amd64 -t mikeluong/temperature-converter .'
-            }
-        }
-        stage('Docker Login') {
+        stage('Docker Build and Push') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                    sh 'docker buildx build --platform linux/amd64,linux/arm64 -t mikeluong/temperature-converter --push .'
                 }
-            }
-        }
-        stage('Docker Push') {
-            steps {
-                sh 'docker push mikeluong/temperature-converter'
             }
         }
     }

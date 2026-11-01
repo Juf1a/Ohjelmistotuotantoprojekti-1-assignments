@@ -5,6 +5,7 @@ import java.util.Locale;
 import java.util.ResourceBundle;
 import javafx.application.Application;
 import javafx.geometry.Insets;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -41,12 +42,13 @@ public class Main extends Application {
             case "Finnish" -> new Locale("fi", "FI");
             case "Swedish" -> new Locale("sv", "SE");
             case "Japanese" -> new Locale("ja", "JP");
+            case "Arabic" -> new Locale("ar", "SA");
             default -> new Locale("en", "US");
         };
     }
 
     private Locale askForLocale() {
-        ChoiceDialog<String> dialog = new ChoiceDialog<>("English", "English", "Finnish", "Swedish", "Japanese");
+        ChoiceDialog<String> dialog = new ChoiceDialog<>("English", "English", "Finnish", "Swedish", "Japanese", "Arabic");
         dialog.setTitle("Language");
         dialog.setHeaderText("Select your language");
         String choice = dialog.showAndWait().orElse("English");
@@ -103,6 +105,9 @@ public class Main extends Application {
         VBox root = new VBox(10, inputField, fToC, cToF, convertButton, resultLabel,
                 new Label(bundle.getString("history.label")), historyList, statusLabel);
         root.setPadding(new Insets(15));
+        if (locale.getLanguage().equals("ar")) {
+            root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        }
 
         refreshHistory();
 

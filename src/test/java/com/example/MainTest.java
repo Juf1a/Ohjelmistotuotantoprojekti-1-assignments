@@ -57,6 +57,7 @@ public class MainTest {
         assertEquals(new Locale("fi", "FI"), Main.localeFor("Finnish"));
         assertEquals(new Locale("sv", "SE"), Main.localeFor("Swedish"));
         assertEquals(new Locale("ja", "JP"), Main.localeFor("Japanese"));
+        assertEquals(new Locale("ar", "SA"), Main.localeFor("Arabic"));
         assertEquals(new Locale("en", "US"), Main.localeFor("English"));
     }
 
