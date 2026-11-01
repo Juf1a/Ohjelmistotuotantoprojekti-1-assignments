@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns:fx="http://javafx.com/fxml" fx:controller="com.example.MainController" spacing="10">
+    <fx:define>
+        <ToggleGroup fx:id="directionGroup"/>
+    </fx:define>
+    <padding>
+        <Insets top="15" right="15" bottom="15" left="15"/>
+    </padding>
+
+    <TextField fx:id="inputField" promptText="%input.prompt"/>
+    <RadioButton fx:id="fToC" text="%fahtocel.radio" toggleGroup="$directionGroup" selected="true"/>
+    <RadioButton text="%celtofah.radio" toggleGroup="$directionGroup"/>
+    <Button text="%convert.button" onAction="#handleConvert"/>
+    <Label fx:id="resultLabel"/>
+    <Label text="%history.label"/>
+    <ListView fx:id="historyList" prefHeight="180"/>
+    <Label fx:id="statusLabel"/>
+</VBox>

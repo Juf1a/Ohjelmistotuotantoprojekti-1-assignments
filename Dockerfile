@@ -19,4 +19,4 @@ COPY --from=build /app/target/fx ./fx
 ENV DISPLAY=host.docker.internal:0.0
 ENV DB_URL=jdbc:mariadb://host.docker.internal:3306/temperature_db
 
-CMD ["java", "-Dprism.order=sw", "--module-path", "fx", "--add-modules", "javafx.controls", "-cp", "classes:lib/*", "com.example.Main"]
+CMD ["java", "-Dprism.order=sw", "--module-path", "fx", "--add-modules", "javafx.controls,javafx.fxml","-cp", "classes:lib/*", "com.example.Main"]

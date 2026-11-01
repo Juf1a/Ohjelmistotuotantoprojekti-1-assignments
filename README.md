@@ -20,7 +20,7 @@ conversion logic, though it is not currently offered as an option in the GUI.
 ## Technologies & Tools Used
 
 - Java 17
-- JavaFX Controls 17.0.9 for the desktop user interface
+- JavaFX Controls and FXML 21.0.1 for the desktop user interface
 - MariaDB for persistent conversion history
 - MariaDB Connector/J 3.3.3 and JDBC for database access
 - Java `ResourceBundle` and UTF-8 `.properties` files for localization
@@ -36,9 +36,10 @@ conversion logic, though it is not currently offered as an option in the GUI.
 The solution separates the user interface, conversion logic, and database
 access:
 
-- `Main` asks for the user's language, creates the JavaFX interface, validates
-  numeric input, selects the conversion direction, shows the result, and
-  refreshes the recent-history list.
+- `Main` asks for the user's language and loads the interface from
+  `MainView.fxml` with the matching resource bundle.
+- `MainController` validates numeric input, selects the conversion direction,
+  shows the result, and refreshes the recent-history list.
 - `TemperatureConverter` implements Fahrenheit/Celsius conversions, the
   extreme-temperature check, and Kelvin-to-Celsius conversion.
 - `TemperatureUnit` and `TempRecord` represent units and saved conversions.

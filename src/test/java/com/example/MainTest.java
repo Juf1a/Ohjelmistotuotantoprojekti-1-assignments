@@ -2,6 +2,7 @@ package com.example;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.geometry.NodeOrientation;
 import javafx.stage.Stage;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -93,5 +94,39 @@ public class MainTest {
             fail(error.get());
         }
         assertEquals("Temperature Converter", title.get());
+    }
+
+    @Test
+    public void testViewLoadsInEveryLanguage() throws Exception {
+        assumeTrue(fxAvailable, "JavaFX toolkit not available, skipping UI test");
+
+        for (String language : new String[] {"English", "Finnish", "Swedish", "Japanese", "Arabic"}) {
+            Locale locale = Main.localeFor(language);
+            AtomicReference<NodeOrientation> orientation = new AtomicReference<>();
+            AtomicReference<Throwable> error = new AtomicReference<>();
+            CountDownLatch latch = new CountDownLatch(1);
+
+            Platform.runLater(() -> {
+                try {
+                    Stage stage = new Stage();
+                    new Main(locale).start(stage);
+                    orientation.set(stage.getScene().getRoot().getNodeOrientation());
+                    stage.close();
+                } catch (Throwable e) {
+                    error.set(e);
+                } finally {
+                    latch.countDown();
+                }
+            });
+
+            assertTrue(latch.await(10, TimeUnit.SECONDS), "UI did not start in time");
+            if (error.get() != null) {
+                fail(language + " failed to load", error.get());
+            }
+            NodeOrientation expected = language.equals("Arabic")
+                    ? NodeOrientation.RIGHT_TO_LEFT
+                    : NodeOrientation.INHERIT;
+            assertEquals(expected, orientation.get(), language);
+        }
     }
 }
