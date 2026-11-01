@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temperature-converter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: temperature-converter
+  template:
+    metadata:
+      labels:
+        app: temperature-converter
+    spec:
+      containers:
+        - name: temperature-converter
+          image: mikeluong/temperature-converter:latest
+          imagePullPolicy: Always
+          env:
+            - name: DISPLAY
+              value: "host.minikube.internal:0.0"
+            - name: DB_URL
+              value: "jdbc:mariadb://host.minikube.internal:3306/temperature_db"
+            - name: DB_USER
+              value: "tempapp"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: temperature-db
+                  key: password

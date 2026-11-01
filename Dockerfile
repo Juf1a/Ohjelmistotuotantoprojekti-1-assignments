@@ -8,7 +8,7 @@ RUN mvn -q package -DskipTests dependency:copy-dependencies -DincludeScope=runti
 
 FROM eclipse-temurin:17-jre-jammy
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libgtk-3-0 libglib2.0-0 libgl1 libxtst6 libxxf86vm1 libxrender1 libxi6 fonts-dejavu-core \
+        libgtk-3-0 libglib2.0-0 libgl1 libxtst6 libxxf86vm1 libxrender1 libxi6 fonts-dejavu-core fonts-noto-cjk \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
