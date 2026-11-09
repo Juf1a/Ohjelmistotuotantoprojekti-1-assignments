@@ -2,58 +2,111 @@
 
 ## Assignment Description
 
-This assignment implements a desktop application for converting temperatures
-between Fahrenheit and Celsius. Users can enter a numeric temperature, choose
-the conversion direction, and view the result. The application flags results
-whose Celsius equivalent is below -40 or above 50 degrees and stores successful
-conversions in a MariaDB database. The interface displays the ten most recent
-saved conversions.
+A JavaFX desktop application that converts temperatures (Celsius, Fahrenheit,
+Kelvin) and also speed, distance and time units. The user picks a quantity,
+a source unit and a target unit, enters a value, and sees the result.
+Temperatures below -40 °C or above 50 °C are flagged as extreme. Every
+conversion is stored in MariaDB together with the language that was active,
+and the interface shows the five most recent conversions.
 
-At launch, the application asks the user to choose a language: English
-(default), Finnish, Swedish, or Japanese. All interface text is then shown in
-the chosen language.
+The interface is available in English, Finnish, Swedish, Japanese and Arabic.
+Two layers are localized:
 
-The deliverable is a JavaFX application, its MariaDB schema, and automated
-JUnit tests. A Kelvin-to-Celsius conversion is also implemented in the
-conversion logic, though it is not currently offered as an option in the GUI.
+- **Static UI labels** (title, buttons, field labels, messages) come from
+  `ResourceBundle` `.properties` files.
+- **Unit names and descriptions** (for example "kilometre per hour",
+  "摂氏", "درجة مئوية") come from the database in the selected language.
+
+The language selector in the window changes both layers at once: it reloads
+the FXML scene with the new bundle, and the controller queries the database
+in the new language. Arabic switches the layout to right-to-left.
+
+## Database Localization Approach: Translation Table
+
+**Chosen approach:** translation table. Unit data that does not depend on the
+language lives in a base table `unit`, and every translatable text lives in
+`unit_translation`, linked to it by a foreign key.
+
+```
+unit                                 unit_translation
+---------------------------------    ------------------------------------
+id        INT PK                 1──*  unit_id     INT FK → unit.id  ┐ PK
+unit_key  VARCHAR UNIQUE              lang        CHAR(2)           ┘
+category  temperature|speed|...       name        VARCHAR(100)
+symbol    °C, km/h, ...               description VARCHAR(255)
+to_base   DOUBLE (factor, NULL
+          for temperature)       conversion_record
+                                 ------------------------------------
+                                 id, input_value, result_value,
+                                 from_unit_id FK → unit.id,
+                                 to_unit_id   FK → unit.id,
+                                 lang, created_at
+```
+
+`UnitDAO` reads the names with one query that joins the translation twice,
+once for the selected language and once for English, and uses `COALESCE` to
+fall back to English when a translation is missing:
+
+```sql
+SELECT u.id, u.unit_key, u.category, u.symbol, u.to_base,
+       COALESCE(t.name, d.name, u.unit_key) AS name,
+       COALESCE(t.description, d.description, '') AS description
+FROM unit u
+LEFT JOIN unit_translation t ON t.unit_id = u.id AND t.lang = ?
+LEFT JOIN unit_translation d ON d.unit_id = u.id AND d.lang = 'en'
+```
+
+**Why this approach:**
+
+- **No duplicated non-text data.** The symbol, category and conversion factor
+  of each unit are stored once. With the *row* approach every language row
+  would repeat them, and a wrong factor could be fixed in one language but
+  not the others.
+- **Adding a language means adding rows only.** No schema change (unlike the
+  *field* approach with `name_en`, `name_fi`, …) and no new table or runtime
+  table-name switching (unlike the *table* approach).
+- **The English fallback is built into the query.** A unit that is not yet
+  translated still shows a readable name instead of an empty dropdown entry.
+  The unit tests check this with a unit that only has an English
+  translation.
+- **The saved data stays language-neutral.** `conversion_record` points to
+  `unit.id`, so the history list is shown with unit names in whatever
+  language is selected now. The `lang` column records which language the
+  conversion was made in.
+- The cost is one extra JOIN per query, which is negligible for a dozen units.
+
+All tables use `utf8mb4` with `utf8mb4_unicode_ci` collation. MariaDB
+Connector/J 3 always uses `utf8mb4` for the connection, so Japanese and
+Arabic are stored and read back without loss.
 
 ## Technologies & Tools Used
 
 - Java 17
 - JavaFX Controls and FXML 21.0.1 for the desktop user interface
-- MariaDB for persistent conversion history
-- MariaDB Connector/J 3.3.3 and JDBC for database access
-- Java `ResourceBundle` and UTF-8 `.properties` files for localization
-- Maven for dependency management, building, and running
-- JUnit Jupiter 5.9.2 for automated tests
-- JaCoCo 0.8.11 for test coverage reports
-- Docker for containerizing the application
-- Jenkins for the CI/CD pipeline (build, test, coverage, Docker image push)
-- XQuartz for displaying the JavaFX GUI from the Docker container on macOS
+- MariaDB with Connector/J 3.3.3 and JDBC
+- Java `ResourceBundle` and UTF-8 `.properties` files for UI labels
+- Maven, JUnit Jupiter 5.9.2 and JaCoCo 0.8.11
+- Docker, Jenkins, Kubernetes (minikube)
+- XQuartz / Xming for displaying the GUI from the Docker container
 
-## Design Approach & Implementation Method
+## Design & Implementation
 
-The solution separates the user interface, conversion logic, and database
-access:
+- `Main` loads `MainView.fxml` with the bundle of the selected `Language`,
+  sets right-to-left orientation for Arabic, and reloads the scene when the
+  language changes.
+- `Language` maps each option to its `Locale` (bundle) and its two-letter
+  code (database `lang` value).
+- `MainController` fills the quantity and unit dropdowns from `UnitDAO`,
+  shows the unit descriptions, converts, saves the conversion, and shows the
+  last 5 conversions.
+- `TemperatureConverter` converts temperatures through Celsius and linear
+  units (speed, distance, time) through the `to_base` factor.
+- `UnitDAO` returns localized units with English fallback.
+- `ConversionDAO` saves conversions and returns the most recent ones.
+- `database/init.sql` creates the database and tables and fills 12 units
+  with names and descriptions in all five languages.
 
-- `Main` asks for the user's language and loads the interface from
-  `MainView.fxml` with the matching resource bundle.
-- `MainController` validates numeric input, selects the conversion direction,
-  shows the result, and refreshes the recent-history list.
-- `TemperatureConverter` implements Fahrenheit/Celsius conversions, the
-  extreme-temperature check, and Kelvin-to-Celsius conversion.
-- `TemperatureUnit` and `TempRecord` represent units and saved conversions.
-- `TemperatureUnitDAO` and `TempRecordDAO` use JDBC to look up units, save
-  conversion records, and retrieve recent history.
-- `DBConnection` reads database connection settings from environment
-  variables, with local defaults.
-- `database/schema.sql` creates the database and required tables and seeds the
-  Celsius and Fahrenheit units.
-
-### Localization
-
-All interface text is stored in resource bundles in `src/main/resources`
-rather than written into the code:
+### UI label bundles
 
 | File | Language |
 |---|---|
@@ -63,108 +116,63 @@ rather than written into the code:
 | `MessagesBundle_ja_JP.properties` | Japanese |
 | `MessagesBundle_ar_SA.properties` | Arabic |
 
-Every file contains the same keys, and only the translated values differ. The
-files are saved as UTF-8, which Java 9 and later read by default, so Japanese
-characters need no escaping. At launch a `ChoiceDialog` asks for the language,
-`Main.localeFor` maps the choice to a `Locale`, and `ResourceBundle` loads the
-matching file. Text that contains a value, such as the conversion result, uses
-`MessageFormat` placeholders (`{0}`).
-
-The history is stored in MariaDB so that it can persist between application
-runs. Conversion queries use prepared statements. Invalid numeric input is
-reported in the interface and is not saved.
+The quantity names (Temperature, Speed, …) are fixed UI labels, so they are
+kept in the bundles (`category.*` keys). Unit names and descriptions are not
+in the bundles.
 
 ## Testing & Quality Assurance
 
-### Automated tests
-
-Run the test suite with:
-
 ```sh
-mvn test
+mvn clean test        # JaCoCo report: target/site/jacoco/index.html
 ```
 
-On 2026-10-25, `mvn test` completed successfully: **36 tests, 0 failures, 0
-errors, and 0 skipped**. Tests cover conversion values, the
-extreme-temperature boundaries (-41, -40, 50, and 51 °C), model behavior,
-database configuration, temperature-unit queries, saving and retrieving
-conversion records, the language-to-locale mapping, and JavaFX application
-startup. The database-backed tests ran against MariaDB.
+On 2026-11-09 with MariaDB running: **55 tests, 0 failures, 0 errors, 0
+skipped**. Tests cover:
 
-Generate the JaCoCo coverage report with:
+- all temperature conversion pairs, speed/distance/time conversions, invalid
+  units, and the extreme-temperature boundaries
+- `UnitDAO`: English, Japanese and Arabic names, all units translated into
+  all five languages, English fallback for a missing translation and for an
+  unknown language
+- `ConversionDAO`: saving with the language, newest-first ordering and
+  limit, and unit names shown in another language
+- the models, `Language`, and the JavaFX view in every language, including
+  runtime switching from English to Arabic (title and RTL)
 
-```sh
-mvn clean test jacoco:report
-```
-
-The report is written to `target/site/jacoco/index.html`. On 2026-10-25,
-`TemperatureConverter` had **100% line and 100% branch coverage**.
-
-### Runtime and manual checks
-
-On 2026-10-09, the MariaDB schema was applied using `database/schema.sql`.
-Verification confirmed both application tables exist and the Celsius and
-Fahrenheit units are seeded. The database-backed automated tests successfully
-saved and retrieved conversion records, checked newest-first ordering and
-history limits, and looked up the temperature units.
-
-`mvn javafx:run` launched the JavaFX application with MariaDB running. The
-GUI was manually tested:
-
-1. Converted `32` °F to Celsius: result `0.00`.
-2. Converted `100` °C to Fahrenheit: result `212.00`.
-3. Entered non-numeric text: the application requested a valid number and did
-   not save a conversion.
-4. Converted values below -40 °C and above 50 °C: the result included the
-   extreme-temperature warning.
-5. Completed a conversion: it appeared in the recent-conversions list. After
-   restarting the application, the saved history remained.
-6. Chose Japanese at launch and converted `60` °C to Fahrenheit: all interface
-   text was in Japanese and the result read `結果: 140.00 (極端な温度です!)`.
+JaCoCo line coverage on 2026-11-09: `TemperatureConverter`, `UnitDAO`,
+`ConversionDAO`, `Unit`, `Conversion` and `Language` all **100%**. Database
+tests are skipped automatically when MariaDB is not reachable.
 
 ## How to Run
 
-### Prerequisites
-
-- JDK 17
-- Apache Maven
-- A running MariaDB server
-- A graphical desktop session to display the JavaFX window
-
-### Configure the database
-
-From the project root, create the database and tables by running the supplied
-schema script with a MariaDB account that can create databases:
+### Database
 
 ```sh
-mysql -u root -p < database/schema.sql
+mysql -u root -p < database/init.sql
 ```
 
-The application defaults to `jdbc:mariadb://localhost:3306/temperature_db`,
-user `root`, and an empty password. If your local database uses different
-settings, set these environment variables before starting the application:
+The script can be run again safely: it updates the seeded units and
+translations in place. The application defaults to
+`jdbc:mariadb://localhost:3306/temperature_db`, user `root`, empty password.
+Override with `DB_URL`, `DB_USER` and `DB_PASSWORD`.
 
-```sh
-export DB_URL="jdbc:mariadb://localhost:3306/temperature_db"
-export DB_USER="your_database_user"
-export DB_PASSWORD="your_database_password"
-```
-
-### Run the application
-
-From the project root:
+### Application
 
 ```sh
 mvn javafx:run
 ```
 
-Maven downloads the project dependencies as needed and launches the JavaFX
-application. A dialog first asks for the language; the main window opens after
-you choose one.
-
-
 ## Docker & CI/CD
 
-The `Dockerfile` packages the application as a Docker image. The `Jenkinsfile`
-defines a Jenkins pipeline that builds, tests, generates the coverage report,
-and pushes the Docker image to Docker Hub.
+The `Dockerfile` builds a multi-architecture image that includes Japanese
+fonts. The `Jenkinsfile` builds, runs the tests, publishes the JUnit and
+JaCoCo results, and pushes `mikeluong/temperature-converter` to Docker Hub.
+
+Run the container with an X server (XQuartz on macOS, Xming on Windows):
+
+```sh
+docker run --rm -e DISPLAY=host.docker.internal:0 mikeluong/temperature-converter
+```
+
+`temperature-converter.yaml` deploys the image to minikube. The database
+runs on the host and is reached through `host.minikube.internal`.

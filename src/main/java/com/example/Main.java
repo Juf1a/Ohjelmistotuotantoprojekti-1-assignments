@@ -1,8 +1,5 @@
 package com.example;
 
-import javafx.scene.control.ChoiceDialog;
-import java.util.Locale;
-import java.util.ResourceBundle;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.NodeOrientation;
@@ -11,52 +8,53 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.ResourceBundle;
 
 public class Main extends Application {
 
-    private Locale locale;
+    private final Language initialLanguage;
 
     public Main() {
+        this(Language.ENGLISH);
     }
 
-    // Lets tests skip the language dialog
-    public Main(Locale locale) {
-        this.locale = locale;
-    }
-
-    static Locale localeFor(String choice) {
-        return switch (choice) {
-            case "Finnish" -> new Locale("fi", "FI");
-            case "Swedish" -> new Locale("sv", "SE");
-            case "Japanese" -> new Locale("ja", "JP");
-            case "Arabic" -> new Locale("ar", "SA");
-            default -> new Locale("en", "US");
-        };
-    }
-
-    private Locale askForLocale() {
-        ChoiceDialog<String> dialog = new ChoiceDialog<>("English", "English", "Finnish", "Swedish", "Japanese", "Arabic");
-        dialog.setTitle("Language");
-        dialog.setHeaderText("Select your language");
-        String choice = dialog.showAndWait().orElse("English");
-        return localeFor(choice);
+    public Main(Language initialLanguage) {
+        this.initialLanguage = initialLanguage;
     }
 
     @Override
     public void start(Stage stage) throws IOException {
-        if (locale == null) {
-            locale = askForLocale();
-        }
-        ResourceBundle bundle = ResourceBundle.getBundle("MessagesBundle", locale);
+        showView(stage, initialLanguage);
+        stage.show();
+    }
 
-        Parent root = FXMLLoader.load(getClass().getResource("/MainView.fxml"), bundle);
-        if (locale.getLanguage().equals("ar")) {
+    /**
+     * Loads the view with the language's ResourceBundle (UI labels). The controller then queries the
+     * database in the same language (unit names and descriptions), so one switch changes both layers.
+     */
+    static void showView(Stage stage, Language language) throws IOException {
+        ResourceBundle bundle = ResourceBundle.getBundle("MessagesBundle", language.getLocale());
+        FXMLLoader loader = new FXMLLoader(Main.class.getResource("/MainView.fxml"), bundle);
+        Parent root = loader.load();
+        if (language.isRightToLeft()) {
             root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
         }
 
+        MainController controller = loader.getController();
+        controller.setOnLanguageChange(selected -> {
+            try {
+                showView(stage, selected);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+
+        Scene previous = stage.getScene();
+        stage.setScene(previous == null
+                ? new Scene(root, 440, 600)
+                : new Scene(root, previous.getWidth(), previous.getHeight()));
         stage.setTitle(bundle.getString("app.title"));
-        stage.setScene(new Scene(root, 360, 460));
-        stage.show();
     }
 
     public static void main(String[] args) {
